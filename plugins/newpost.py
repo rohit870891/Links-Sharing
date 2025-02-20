@@ -93,16 +93,24 @@ async def send_channel_page(client, message, channels, page):
     end_idx = start_idx + PAGE_SIZE
     buttons = []
 
+    row = []
     for channel_id in channels[start_idx:end_idx]:
         try:
             base64_invite = await save_encoded_link(channel_id)
             button_link = f"https://t.me/{client.username}?start={base64_invite}"
             chat = await client.get_chat(channel_id)
-            buttons.append(InlineKeyboardButton(chat.title, url=button_link))
+            
+            row.append(InlineKeyboardButton(chat.title, url=button_link))
+            
+            if len(row) == 2:
+                buttons.append(row)
+                row = [] 
         except Exception as e:
             print(f"Error for {channel_id}: {e}")
 
-    # Pagination buttons
+    if row: 
+        buttons.append(row)
+
     nav_buttons = []
     if page > 0:
         nav_buttons.append(InlineKeyboardButton("⬅ Previous", callback_data=f"channelpage_{page-1}"))
@@ -112,7 +120,7 @@ async def send_channel_page(client, message, channels, page):
     if nav_buttons:
         buttons.append(nav_buttons)
 
-    reply_markup = InlineKeyboardMarkup([buttons[i:i+2] for i in range(0, len(buttons), 2)])
+    reply_markup = InlineKeyboardMarkup(buttons)
     await message.reply("📢 Select a channel to post:", reply_markup=reply_markup)
 
 
@@ -141,17 +149,25 @@ async def send_request_page(client, message, channels, page):
     end_idx = start_idx + PAGE_SIZE
     buttons = []
 
+    row = []
     for channel_id in channels[start_idx:end_idx]:
         try:
             base64_request = await encode(str(channel_id))
             await save_encoded_link2(channel_id, base64_request)
             button_link = f"https://t.me/{client.username}?start=req_{base64_request}"
             chat = await client.get_chat(channel_id)
-            buttons.append(InlineKeyboardButton(chat.title, url=button_link))
+
+            row.append(InlineKeyboardButton(chat.title, url=button_link))
+
+            if len(row) == 2:
+                buttons.append(row)
+                row = [] 
         except Exception as e:
             print(f"Error generating request link for {channel_id}: {e}")
 
-    # Pagination buttons
+    if row: 
+        buttons.append(row)
+
     nav_buttons = []
     if page > 0:
         nav_buttons.append(InlineKeyboardButton("⬅ Previous", callback_data=f"reqpage_{page-1}"))
@@ -159,9 +175,8 @@ async def send_request_page(client, message, channels, page):
         nav_buttons.append(InlineKeyboardButton("Next ➡", callback_data=f"reqpage_{page+1}"))
 
     if nav_buttons:
-        buttons.append(nav_buttons)
-
-    reply_markup = InlineKeyboardMarkup([buttons[i:i+2] for i in range(0, len(buttons), 2)])
+        buttons.append(nav_buttons) 
+    reply_markup = InlineKeyboardMarkup(buttons)
     await message.reply("📢 Select a channel to request access:", reply_markup=reply_markup)
 
 
